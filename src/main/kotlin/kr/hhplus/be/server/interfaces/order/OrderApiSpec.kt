@@ -1,4 +1,4 @@
-package kr.hhplus.be.server.controller.order
+package kr.hhplus.be.server.interfaces.order
 
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
@@ -7,8 +7,6 @@ import io.swagger.v3.oas.annotations.parameters.RequestBody
 import io.swagger.v3.oas.annotations.tags.Tag
 import io.swagger.v3.oas.annotations.media.Content
 import kr.hhplus.be.server.ApiResponse
-import kr.hhplus.be.server.controller.order.request.OrderRequest
-import kr.hhplus.be.server.controller.order.response.OrderResponse
 
 
 @Tag(
