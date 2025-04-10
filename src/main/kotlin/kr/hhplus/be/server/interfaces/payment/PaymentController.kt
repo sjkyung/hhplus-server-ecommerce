@@ -1,23 +1,25 @@
-package kr.hhplus.be.server.controller.payment
+package kr.hhplus.be.server.interfaces.payment
 
 import kr.hhplus.be.server.ApiResponse
-import kr.hhplus.be.server.controller.payment.request.PaymentRequest
-import kr.hhplus.be.server.controller.payment.response.PaymentResponse
+import kr.hhplus.be.server.application.payment.PaymentService
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
-import java.time.LocalDateTime
 
 @RestController
 @RequestMapping("/api/v1")
-class PaymentController : PaymentApiSpec {
+class PaymentController(
+    private val paymentFacade: PaymentService,
+) : PaymentApiSpec {
 
     @PostMapping("/payments")
     override fun pay(
         @RequestBody paymentRequest: PaymentRequest
     ): ApiResponse<PaymentResponse> {
-        val response = PaymentResponse(1, "COMPLETED", 50000, LocalDateTime.now())
+        val paymentCommand = paymentRequest.toCommand()
+        val payment = paymentFacade.create(paymentCommand)
+        val response = PaymentResponse.from(payment)
         return ApiResponse.success(response)
     }
 }

@@ -1,4 +1,4 @@
-package kr.hhplus.be.server.controller.payment
+package kr.hhplus.be.server.interfaces.payment
 
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.media.Content
@@ -6,8 +6,6 @@ import io.swagger.v3.oas.annotations.media.ExampleObject
 import io.swagger.v3.oas.annotations.parameters.RequestBody
 import io.swagger.v3.oas.annotations.tags.Tag
 import kr.hhplus.be.server.ApiResponse
-import kr.hhplus.be.server.controller.payment.request.PaymentRequest
-import kr.hhplus.be.server.controller.payment.response.PaymentResponse
 
 @Tag(
     name = "결제 API",
