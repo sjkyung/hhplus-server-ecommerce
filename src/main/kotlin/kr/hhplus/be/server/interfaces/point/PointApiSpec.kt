@@ -1,4 +1,4 @@
-package kr.hhplus.be.server.controller.point
+package kr.hhplus.be.server.interfaces.point
 
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
@@ -7,9 +7,6 @@ import io.swagger.v3.oas.annotations.media.ExampleObject
 import io.swagger.v3.oas.annotations.parameters.RequestBody
 import io.swagger.v3.oas.annotations.tags.Tag
 import kr.hhplus.be.server.ApiResponse
-import kr.hhplus.be.server.controller.point.request.ChargePointRequest
-import kr.hhplus.be.server.controller.point.response.ChargePointResponse
-import kr.hhplus.be.server.controller.point.response.PointFindResponse
 
 @Tag(
     name = "포인트 API",
@@ -100,9 +97,9 @@ interface PointApiSpec {
             )
         ]
     )
-    fun charge(
+    fun chargePoint(
         @Parameter(description = "사용자 ID", example = "1")
         userId: Long,
-        charge: ChargePointRequest
+        chargePointRequest: ChargePointRequest
     ): ApiResponse<ChargePointResponse>
 }
