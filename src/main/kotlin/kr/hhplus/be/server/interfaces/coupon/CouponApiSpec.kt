@@ -1,4 +1,4 @@
-package kr.hhplus.be.server.controller.coupon
+package kr.hhplus.be.server.interfaces.coupon
 
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
@@ -7,9 +7,6 @@ import io.swagger.v3.oas.annotations.media.ExampleObject
 import io.swagger.v3.oas.annotations.tags.Tag
 import io.swagger.v3.oas.annotations.parameters.RequestBody
 import kr.hhplus.be.server.ApiResponse
-import kr.hhplus.be.server.controller.coupon.request.CouponIssueRequest
-import kr.hhplus.be.server.controller.coupon.response.CouponFindResponse
-import kr.hhplus.be.server.controller.coupon.response.CouponIssueResponse
 
 
 @Tag(
