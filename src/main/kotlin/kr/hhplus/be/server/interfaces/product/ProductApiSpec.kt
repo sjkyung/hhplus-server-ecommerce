@@ -1,12 +1,10 @@
-package kr.hhplus.be.server.controller.product
+package kr.hhplus.be.server.interfaces.product
 
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.ExampleObject
 import io.swagger.v3.oas.annotations.tags.Tag
 import kr.hhplus.be.server.ApiResponse
-import kr.hhplus.be.server.controller.product.response.ProductFindResponse
-import kr.hhplus.be.server.controller.product.response.ProductRankingResponse
 
 @Tag(
     name = "상품 API",
