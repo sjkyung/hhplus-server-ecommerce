@@ -11,7 +11,7 @@ data class IssueCouponResult(
     val status: String,
     val usedAt: LocalDateTime?,
     val expiredAt: LocalDateTime,
-    val createdAt: LocalDateTime,
+    val createdAt: LocalDateTime
 ) {
     companion object{
         fun from(
