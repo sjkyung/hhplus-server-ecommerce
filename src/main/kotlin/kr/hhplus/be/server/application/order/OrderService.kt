@@ -37,7 +37,7 @@ class OrderService(
         )
         val saveOrder = orderRepository.save(order)
 
-        val orderItems = orderCommand.toDomain(order.id,products)
+        val orderItems = orderCommand.toDomain(saveOrder.id,products)
 
         orderItemRepository.saveAll(orderItems)
 

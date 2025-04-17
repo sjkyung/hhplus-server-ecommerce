@@ -19,8 +19,7 @@ class PointService(
     fun charge(pointChargeCommand: PointChargeCommand): UserPoint{
         val point = pointRepository.findByUserId(pointChargeCommand.userId)
         val chargedPoint = point.charge(pointChargeCommand.amount)
-        val savePoint = pointRepository.save(chargedPoint)
-        return savePoint
+        return pointRepository.save(chargedPoint)
     }
 
 }

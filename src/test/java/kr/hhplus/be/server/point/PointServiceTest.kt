@@ -24,7 +24,7 @@ class PointServiceTest {
     fun `포인트를 정상적으로 조회한다`() {
         // given
         val userId = 1L
-        val userPoint = UserPoint(userId, 1000)
+        val userPoint = UserPoint(userId, 1L,1000)
         `when`(userPointRepository.findByUserId(userId)).thenReturn(userPoint)
 
         // when
@@ -39,9 +39,9 @@ class PointServiceTest {
     fun `포인트를 정상적으로 충전한다`() {
         // given
         val command = PointChargeCommand(userId = 1L, amount = 500)
-        val initialPoint = UserPoint(1L, 1000)
+        val initialPoint = UserPoint(1L, 1L,1000)
         // 충전 후 포인트가 1500원이 되는 케이스라고 가정
-        val chargedPoint = UserPoint(1L, 1500)
+        val chargedPoint = UserPoint(1L,1L, 1500)
         `when`(userPointRepository.findByUserId(command.userId)).thenReturn(initialPoint)
         `when`(userPointRepository.save(any(UserPoint::class.java))).thenReturn(chargedPoint)
 
@@ -58,7 +58,7 @@ class PointServiceTest {
     fun `음수 포인트 충전 시 예외가 발생한다`() {
         // given
         val command = PointChargeCommand(userId = 1L, amount = -100)
-        val initialPoint = UserPoint(1L, 1000)
+        val initialPoint = UserPoint(1L, 1L,1000)
         `when`(userPointRepository.findByUserId(command.userId)).thenReturn(initialPoint)
 
         // when & then

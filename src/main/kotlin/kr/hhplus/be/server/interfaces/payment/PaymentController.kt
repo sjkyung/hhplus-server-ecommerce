@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 @RequestMapping("/api/v1")
 class PaymentController(
-    private val paymentFacade: PaymentService,
+    private val paymentService: PaymentService,
 ) : PaymentApiSpec {
 
     @PostMapping("/payments")
@@ -18,7 +18,7 @@ class PaymentController(
         @RequestBody paymentRequest: PaymentRequest
     ): ApiResponse<PaymentResponse> {
         val paymentCommand = paymentRequest.toCommand()
-        val payment = paymentFacade.create(paymentCommand)
+        val payment = paymentService.create(paymentCommand)
         val response = PaymentResponse.from(payment)
         return ApiResponse.success(response)
     }

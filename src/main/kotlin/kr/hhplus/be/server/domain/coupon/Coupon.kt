@@ -6,7 +6,7 @@ data class Coupon(
     val couponId: Long,
     val name: String,
     val discountAmount: Long,
-    var quantity : Long,
+    val quantity : Long,
     val expiredAt : LocalDateTime,
 ) {
     fun decrease(): Coupon {

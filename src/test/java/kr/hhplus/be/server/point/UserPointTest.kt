@@ -15,7 +15,7 @@ class UserPointTest {
         @Test
         fun `포인트 충전 금액이 양수 일때 포인트가 증가한다`() {
             // given
-            val point = UserPoint(id = 1L, point = 100L)
+            val point = UserPoint(id = 1L,1L, point = 100L)
 
             // when
             val updatedPoint = point.charge(50L)
@@ -28,7 +28,7 @@ class UserPointTest {
         @Test
         fun `0 이하 또는 음수 일 경우 충전 시 예외가 발생해야 한다`() {
             // given
-            val point = UserPoint(id = 1L, point = 100L)
+            val point = UserPoint(id = 1L,1L, point = 100L)
 
             // then
             assertThatThrownBy {
@@ -46,7 +46,7 @@ class UserPointTest {
         @Test
         fun `사용금액이 양수 이고 잔액이 충분할 경우 포인트가 차감되어야 한다`() {
             // given
-            val point = UserPoint(id = 1L, point = 1000)
+            val point = UserPoint(id = 1L,1L, point = 1000)
 
             // when
             val updatedPoint = point.use(300)
@@ -58,7 +58,7 @@ class UserPointTest {
         @Test
         fun `0이하 또는 음수일 경우 포인트 사용 시 예외가 발생해야 한다`() {
             // given
-            val point = UserPoint(id = 1L, point = 100L)
+            val point = UserPoint(id = 1L,1L, point = 100L)
 
             // then
             assertThatThrownBy{
@@ -72,7 +72,7 @@ class UserPointTest {
         @Test
         fun `포인트 사용 시 잔액이 부족할 경우 사용 시 예외가 발생해야 한다`() {
             // given
-            val point = UserPoint(id = 1L, point = 50L)
+            val point = UserPoint(id = 1L,1L, point = 50L)
 
             // then
             assertThatThrownBy{
@@ -90,14 +90,14 @@ class UserPointTest {
         fun `잔액이 충분할 경우 검증은 예외를 발생시키지 않아야 한다`() {
 
             assertThatCode {
-                UserPoint(id = 1L, point = 100L).validateAvailable(50L)
+                UserPoint(id = 1L,1L, point = 100L).validateAvailable(50L)
             }.doesNotThrowAnyException()
         }
 
         @Test
         fun `잔액이 부족할 경우 검증은 IllegalStateException이 발생시켜야 한다`() {
             // given
-            val point = UserPoint(id = 1L, point = 30L)
+            val point = UserPoint(id = 1L,1L, point = 30L)
 
             // then
             assertThatThrownBy{
