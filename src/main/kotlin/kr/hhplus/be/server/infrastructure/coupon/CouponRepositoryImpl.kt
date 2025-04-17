@@ -5,17 +5,27 @@ import kr.hhplus.be.server.domain.coupon.CouponRepository
 import org.springframework.stereotype.Repository
 
 @Repository
-class CouponRepositoryImpl: CouponRepository {
+class CouponRepositoryImpl(
+    private val jpaCouponRepository: JpaCouponRepository
+): CouponRepository {
 
     override fun findById(couponId: Long): Coupon {
-        TODO("Not yet implemented")
+        return jpaCouponRepository.findById(couponId).orElseThrow().let{
+            CouponConverter.toDomain(it)
+        }
     }
 
     override fun save(coupon: Coupon): Coupon {
-        TODO("Not yet implemented")
+        val couponEntity= jpaCouponRepository.save(
+            CouponConverter.toEntity(coupon)
+        )
+        return  CouponConverter.toDomain(couponEntity)
     }
 
     override fun findByIds(couponIds: List<Long>): List<Coupon> {
-        TODO("Not yet implemented")
+        val couponEntityList = jpaCouponRepository.findAllById(couponIds)
+        return couponEntityList.map{
+            CouponConverter.toDomain(it)
+        }
     }
 }
