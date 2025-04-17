@@ -15,10 +15,10 @@ data class ProductRankingResponse(
             productResult: ProductResult
         ): ProductRankingResponse {
             return ProductRankingResponse(
-                rank = productResult.productStat.ranking,
+                rank = productResult.stat.ranking,
                 name = productResult.product.name,
                 price = productResult.product.price,
-                salesCount = productResult.productStat.salesCount.toInt(),
+                salesCount = productResult.stat.salesCount.toInt(),
                 countedAt = productResult.countedAt
             )
         }

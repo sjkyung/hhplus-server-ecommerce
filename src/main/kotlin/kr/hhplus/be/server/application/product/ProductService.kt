@@ -2,13 +2,13 @@ package kr.hhplus.be.server.application.product
 
 import kr.hhplus.be.server.domain.product.Product
 import kr.hhplus.be.server.domain.product.ProductRepository
-import kr.hhplus.be.server.domain.stats.ProductStatsRepository
+import kr.hhplus.be.server.domain.stat.StatRepository
 import org.springframework.stereotype.Service
 
 @Service
 class ProductService(
     private val productRepository: ProductRepository,
-    private val productStatsRepository: ProductStatsRepository,
+    private val statRepository: StatRepository,
 ) {
 
     fun findAllProducts(
@@ -18,7 +18,7 @@ class ProductService(
 
     fun findRankingByProducts(
     ): List<ProductResult> {
-        val stats = productStatsRepository.findAllOrderBySalesDesc();
+        val stats = statRepository.findAllOrderBySalesDesc();
         val ids = stats.map { it.productId }.distinct()
         val products = productRepository.findByIds(ids)
 

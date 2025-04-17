@@ -33,7 +33,7 @@ data class UserCoupon(
 
     fun apply(): UserCoupon {
         check(couponStatus == CouponStatus.AVAILABLE){
-            "쿠폰이 이미 사용 되었거나 만료되었습니다."
+            "쿠폰이 이미 사용되었거나 만료되었습니다."
         }
         return UserCoupon(
             userCouponId = userCouponId,

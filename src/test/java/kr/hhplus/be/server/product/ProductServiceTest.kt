@@ -2,8 +2,8 @@ package kr.hhplus.be.server.application.product
 
 import kr.hhplus.be.server.domain.product.Product
 import kr.hhplus.be.server.domain.product.ProductRepository
-import kr.hhplus.be.server.domain.stats.ProductStat
-import kr.hhplus.be.server.domain.stats.ProductStatsRepository
+import kr.hhplus.be.server.domain.stat.Stat
+import kr.hhplus.be.server.domain.stat.StatRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -12,16 +12,16 @@ import org.mockito.BDDMockito.*
 class ProductServiceTest {
 
     private lateinit var productRepository: ProductRepository
-    private lateinit var productStatsRepository: ProductStatsRepository
+    private lateinit var statRepository: StatRepository
     private lateinit var productService: ProductService
 
     @BeforeEach
     fun init() {
         productRepository = mock(productRepository::class.java)
-        productStatsRepository = mock(productStatsRepository::class.java)
+        statRepository = mock(statRepository::class.java)
         productService = ProductService(
             productRepository,
-            productStatsRepository
+            statRepository
         )
     }
 
@@ -46,10 +46,10 @@ class ProductServiceTest {
     fun `상품 랭킹 결과 반환 테스트`() {
         // given
         val stats = listOf(
-            ProductStat(1, 1, 100),
-            ProductStat(2, 2, 80)
+            Stat(1, 1, 100),
+            Stat(2, 2, 80)
         )
-        `when`(productStatsRepository.findAllOrderBySalesDesc()).thenReturn(stats)
+        `when`(statRepository.findAllOrderBySalesDesc()).thenReturn(stats)
 
         val ids = stats.map { it.productId }.distinct()
         val product1 = Product(1, "나이키신발", 1000, 200)
@@ -64,13 +64,13 @@ class ProductServiceTest {
 
         val result1 = result.find { it.product.id == 1L }
         assertThat(result1).isNotNull
-        assertThat(result1!!.productStat.salesCount).isEqualTo(100)
+        assertThat(result1!!.stat.salesCount).isEqualTo(100)
 
         val result2 = result.find { it.product.id == 2L }
         assertThat(result2).isNotNull
-        assertThat(result2!!.productStat.salesCount).isEqualTo(80L)
+        assertThat(result2!!.stat.salesCount).isEqualTo(80L)
 
-        verify(productStatsRepository).findAllOrderBySalesDesc()
+        verify(statRepository).findAllOrderBySalesDesc()
         verify(productRepository).findByIds(ids)
     }
 }

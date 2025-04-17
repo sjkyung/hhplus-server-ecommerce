@@ -6,6 +6,7 @@ import java.time.LocalDateTime
 
 data class UserPoint(
     val id: Long,
+    val userId: Long,
     var point: Long,
 ): Timestamped() {
 
@@ -17,6 +18,7 @@ data class UserPoint(
         updatedAt = LocalDateTime.now()
         return UserPoint(
             id,
+            userId,
             point + amount
         )
     }
@@ -27,6 +29,7 @@ data class UserPoint(
         updatedAt = LocalDateTime.now()
         return UserPoint(
             id,
+            userId,
             point - amount
         )
     }
