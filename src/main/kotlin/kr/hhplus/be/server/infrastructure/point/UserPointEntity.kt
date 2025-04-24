@@ -9,6 +9,9 @@ class UserPointEntity(
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     val id: Long = 0,
     val userId: Long,
-    val point: Long
+    val point: Long,
+
+    @Version
+    val version: Long = 0
 ) {
 }
