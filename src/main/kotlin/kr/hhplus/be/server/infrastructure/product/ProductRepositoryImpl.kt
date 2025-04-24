@@ -2,32 +2,34 @@ package kr.hhplus.be.server.infrastructure.product
 
 import kr.hhplus.be.server.domain.product.Product
 import kr.hhplus.be.server.domain.product.ProductRepository
-import kr.hhplus.be.server.domain.stats.ProductStat
-import kr.hhplus.be.server.domain.stats.ProductStatsRepository
 import org.springframework.stereotype.Repository
-import java.time.LocalDateTime
+import org.springframework.transaction.annotation.Transactional
 
 @Repository
-class ProductRepositoryImpl(): ProductRepository,ProductStatsRepository {
+class ProductRepositoryImpl(
+    private val jpaProductRepository: JpaProductRepository,
+) : ProductRepository {
 
-    override fun findAll() : List<Product> {
-        TODO("Not yet implemented")
+    //전체 product 전체 조회
+    override fun findAll(): List<Product> {
+        val products = jpaProductRepository.findAll()
+        return ProductConverter.toDomainList(products)
     }
 
     override fun findByIds(ids: List<Long>): List<Product> {
-        TODO("Not yet implemented")
+        val products = jpaProductRepository.findAllById(ids)
+        return ProductConverter.toDomainList(products)
     }
 
     override fun findById(id: Long): Product {
-        TODO("Not yet implemented")
+        val product = jpaProductRepository.findById(id).orElseThrow()
+        return ProductConverter.toDomain(product)
     }
 
+    @Transactional
     override fun save(product: Product): Product {
-        TODO("Not yet implemented")
+        val productEntity = ProductConverter.toProductEntity(product)
+        val products = jpaProductRepository.save(productEntity)
+        return ProductConverter.toDomain(products)
     }
-
-    override fun findAllOrderBySalesDesc(): List<ProductStat> {
-        TODO("Not yet implemented")
-    }
-
 }
