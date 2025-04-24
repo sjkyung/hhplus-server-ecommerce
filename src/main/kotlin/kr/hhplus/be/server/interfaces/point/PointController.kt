@@ -26,7 +26,7 @@ class PointController(
         @RequestBody chargePointRequest: ChargePointRequest
     ): ApiResponse<ChargePointResponse>{
         val pointChargeCommand = chargePointRequest.toCommand(userId)
-        val point = pointService.charge(pointChargeCommand)
+        val point = pointService.chargeOptimistic(pointChargeCommand)
         val response = ChargePointResponse.from(point,chargePointRequest.amount)
         return ApiResponse.success(response)
     }

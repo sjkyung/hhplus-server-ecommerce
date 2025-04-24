@@ -25,7 +25,7 @@ class CouponController(
         @RequestBody couponIssueRequest: CouponIssueRequest
     ): ApiResponse<CouponIssueResponse> {
         val couponCommand = couponIssueRequest.toCommand(couponId)
-        val userCoupon = couponService.issue(couponCommand)
+        val userCoupon = couponService.issuePessimistic(couponCommand)
         val response = CouponIssueResponse.from(userCoupon)
         return ApiResponse.success(response)
     }
