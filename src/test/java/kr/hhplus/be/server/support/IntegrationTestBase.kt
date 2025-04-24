@@ -13,7 +13,7 @@ import org.testcontainers.junit.jupiter.Testcontainers
 import org.testcontainers.utility.DockerImageName
 
 
-@SpringBootTest
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT)
 @Testcontainers
 @ActiveProfiles("test")
 abstract class IntegrationTestBase {
@@ -23,6 +23,7 @@ abstract class IntegrationTestBase {
 
     @BeforeEach
     fun cleanDatabase() {
+
         jdbcTemplate.execute("SET FOREIGN_KEY_CHECKS = 0")
 
         val tableNames = jdbcTemplate.queryForList(
