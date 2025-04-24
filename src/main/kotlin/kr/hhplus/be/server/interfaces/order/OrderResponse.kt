@@ -1,6 +1,5 @@
 package kr.hhplus.be.server.interfaces.order
 
-import kr.hhplus.be.server.application.order.OrderCommand
 import kr.hhplus.be.server.domain.order.Order
 import java.time.LocalDateTime
 
