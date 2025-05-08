@@ -18,7 +18,7 @@ class PaymentController(
         @RequestBody paymentRequest: PaymentRequest
     ): ApiResponse<PaymentResponse> {
         val paymentCommand = paymentRequest.toCommand()
-        val payment = paymentService.create(paymentCommand)
+        val payment = paymentService.createPessimistic(paymentCommand)
         val response = PaymentResponse.from(payment)
         return ApiResponse.success(response)
     }
