@@ -1,5 +1,7 @@
 package kr.hhplus.be.server.application.payment
 
+import kr.hhplus.be.server.application.lock.DistributedLock
+import kr.hhplus.be.server.application.lock.LockType
 import kr.hhplus.be.server.domain.coupon.CouponRepository
 import kr.hhplus.be.server.domain.coupon.UserCouponRepository
 import kr.hhplus.be.server.domain.order.OrderItemRepository
@@ -29,14 +31,14 @@ class PaymentService(
 
         orderItems.forEach { item ->
             val product = productRepository.findById(item.productId)
-            product.decrease(item.quantity)
-            productRepository.save(product)
+            val updatedProduct = product.decrease(item.quantity)
+            productRepository.save(updatedProduct)
         }
 
         val orderPrice = order.userCouponId?.let{ couponId ->
             val userCoupon = userCouponRepository.findById(couponId)
-            userCoupon.apply()
-            userCouponRepository.save(userCoupon)
+            val applyUserCoupon = userCoupon.apply()
+            userCouponRepository.save(applyUserCoupon)
 
             val coupon = couponRepository.findById(couponId)
             coupon.calculateDiscountAmount(order.totalPrice)
@@ -46,8 +48,8 @@ class PaymentService(
         order.userId.let { userId ->
             val userPoint = pointRepository.findByUserId(userId)
 
-            userPoint.use(orderPrice)
-            pointRepository.save(userPoint)
+            val usedUserPoint = userPoint.use(orderPrice)
+            pointRepository.save(usedUserPoint)
         }
 
 
@@ -56,8 +58,65 @@ class PaymentService(
             order.totalPrice
         )
 
-        order.complete()
+        val updatedOrder = order.complete()
+        orderRepository.save(updatedOrder)
         return paymentRepository.save(payment)
     }
 
+    @DistributedLock(key = "'payment-lock-' + #paymentCommand.orderId", lockType = LockType.REDIS_SPIN)
+    @Transactional
+    fun createPessimistic(paymentCommand: PaymentCommand): Payment{
+        val order = orderRepository.findById(paymentCommand.orderId)
+        val orderItems = orderItemRepository.findByOrderId(order.id)
+
+        orderItems.sortedBy { it.productId }.forEach { item ->
+            val product = productRepository.findWithLockById(item.productId)
+            val updatedProduct = product.decrease(item.quantity)
+            productRepository.save(updatedProduct)
+        }
+
+        val orderPrice = order.userCouponId?.let{ couponId ->
+            val userCoupon = userCouponRepository.findById(couponId)
+            val applyUserCoupon = userCoupon.apply()
+            userCouponRepository.save(applyUserCoupon)
+
+            val coupon = couponRepository.findById(couponId)
+            coupon.calculateDiscountAmount(order.totalPrice)
+        } ?: order.totalPrice
+
+
+        order.userId.let { userId ->
+            val userPoint = pointRepository.findByUserId(userId)
+
+            val usedUserPoint = userPoint.use(orderPrice)
+            pointRepository.save(usedUserPoint)
+        }
+
+
+        val payment = Payment.create(
+            order.id,
+            order.totalPrice
+        )
+
+        val updatedOrder = order.complete()
+        orderRepository.save(updatedOrder)
+        return paymentRepository.save(payment)
+    }
+
+
+    @DistributedLock(key = "'product-lock-' + #productId", lockType = LockType.REDIS_SPIN)
+    @Transactional
+    fun decreaseWithSpinLock(productId: Long, quantity: Int) {
+        val product = productRepository.findWithLockById(productId)
+        val updated = product.decrease(quantity)
+        productRepository.save(updated)
+    }
+
+    @DistributedLock(key = "'product-lock-' + #productId", lockType = LockType.REDIS_PUB_SUB)
+    @Transactional
+    fun decreaseWithPubSubLock(productId: Long, quantity: Int) {
+        val product = productRepository.findWithLockById(productId)
+        val updated = product.decrease(quantity)
+        productRepository.save(updated)
+    }
 }
