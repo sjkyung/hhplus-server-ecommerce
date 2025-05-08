@@ -13,8 +13,10 @@ interface JpaStatQueryRepository: JpaRepository<OrderItemEntity, Long> {
         SELECT new kr.hhplus.be.server.infrastructure.stat.ProductStatDto(
             orderItem.productId, SUM(orderItem.quantity)
         )
-        FROM OrderItemEntity orderItem
-        WHERE orderItem.createdAt >= :threeDaysAgo
+        FROM OrderItemEntity orderItem, OrderEntity order
+        WHERE order.id = orderItem.orderId
+        AND order.status = 'COMPLETED'
+        AND orderItem.createdAt >= :threeDaysAgo
         GROUP BY orderItem.productId
         ORDER BY SUM(orderItem.quantity) DESC
     """)

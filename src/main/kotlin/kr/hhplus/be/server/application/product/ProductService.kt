@@ -3,6 +3,7 @@ package kr.hhplus.be.server.application.product
 import kr.hhplus.be.server.domain.product.Product
 import kr.hhplus.be.server.domain.product.ProductRepository
 import kr.hhplus.be.server.domain.stat.StatRepository
+import org.springframework.cache.annotation.Cacheable
 import org.springframework.stereotype.Service
 
 @Service
@@ -25,5 +26,14 @@ class ProductService(
         val productMap = products.associateBy { it.id }
 
         return ProductResult.from(productMap,stats)
+    }
+
+    @Cacheable(cacheNames = ["popularProducts"],key = "'ranking'")
+    fun findRankingByProductsCache(): List<ProductResult> {
+        val stats = statRepository.findAllOrderBySalesDesc()
+        val ids = stats.map { it.productId }.distinct()
+        val products = productRepository.findByIds(ids)
+        val productMap = products.associateBy { it.id }
+        return ProductResult.from(productMap, stats)
     }
 }
