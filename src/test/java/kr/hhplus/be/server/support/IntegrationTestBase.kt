@@ -1,12 +1,19 @@
 package kr.hhplus.be.server.support
 
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
+import org.redisson.Redisson
+import org.redisson.api.RedissonClient
+import org.redisson.config.Config
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.context.annotation.EnableAspectJAutoProxy
+import org.springframework.context.annotation.Import
 import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
+import org.testcontainers.containers.GenericContainer
 import org.testcontainers.containers.MySQLContainer
 import org.testcontainers.junit.jupiter.Container
 import org.testcontainers.junit.jupiter.Testcontainers
@@ -16,10 +23,13 @@ import org.testcontainers.utility.DockerImageName
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT)
 @Testcontainers
 @ActiveProfiles("test")
+@Import(RedissonTestConfig::class)
+@EnableAspectJAutoProxy
 abstract class IntegrationTestBase {
 
     @Autowired
     lateinit var jdbcTemplate: JdbcTemplate
+    lateinit var redissonClient: RedissonClient
 
     @BeforeEach
     fun cleanDatabase() {
@@ -36,7 +46,21 @@ abstract class IntegrationTestBase {
         }
 
         jdbcTemplate.execute("SET FOREIGN_KEY_CHECKS = 1")
+
+
+        val config = Config().apply {
+            useSingleServer()
+                .setAddress("redis://${redis.host}:${redis.getMappedPort(6379)}")
+        }
+
+        redissonClient = Redisson.create(config)
     }
+
+    @AfterEach
+    fun setDown(){
+        redissonClient.shutdown()
+    }
+
 
     companion object {
         @Container
@@ -46,12 +70,20 @@ abstract class IntegrationTestBase {
             withPassword("application")
         }
 
+        @Container
+        val redis = GenericContainer(DockerImageName.parse("redis:7.4.2")).apply{
+            withExposedPorts(6379)
+        }
+
         @JvmStatic
         @DynamicPropertySource
         fun overrideProperties(registry: DynamicPropertyRegistry) {
             registry.add("spring.datasource.url", mysql::getJdbcUrl)
             registry.add("spring.datasource.username", mysql::getUsername)
             registry.add("spring.datasource.password", mysql::getPassword)
+
+            registry.add("spring.redis.host") {redis.host}
+            registry.add("spring.redis.port") {redis.getMappedPort(6379).toString()}
         }
     }
 }
