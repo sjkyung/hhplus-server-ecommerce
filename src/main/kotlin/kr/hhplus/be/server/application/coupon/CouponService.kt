@@ -81,4 +81,15 @@ class CouponService(
         val saveUserCoupon = userCouponRepository.save(issuedCoupon)
         return IssueCouponResult.from(saveUserCoupon,saveCoupon)
     }
+
+    fun applyCoupon(userId: Long, couponId: Long): Boolean {
+        if (!couponRepository.checkDuplicate(userId)){
+            throw IllegalStateException("이미 발급된 쿠폰입니다.")
+        }
+        if (!couponRepository.decreaseStock(userId)){
+            throw IllegalStateException("쿠폰의 수량이 부족합니다.")
+        }
+        couponRepository.saveToPending(userId, couponId)
+        return true
+    }
 }
