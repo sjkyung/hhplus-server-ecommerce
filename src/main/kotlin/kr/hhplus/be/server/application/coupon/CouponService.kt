@@ -1,14 +1,20 @@
 package kr.hhplus.be.server.application.coupon
 
+
 import kr.hhplus.be.server.domain.coupon.*
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Isolation
 import org.springframework.transaction.annotation.Transactional
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.locks.ReentrantLock
 
 @Service
 class CouponService(
     private val couponRepository: CouponRepository,
-    private val userCouponRepository: UserCouponRepository
+    private val userCouponRepository: UserCouponRepository,
 ) {
+
+    private val userCouponLock = ConcurrentHashMap <Long, ReentrantLock>()
 
     fun getCoupons(userId: Long): List<CouponResult> {
         val userCoupons = userCouponRepository.findByUserId(userId)
@@ -20,9 +26,58 @@ class CouponService(
     @Transactional
     fun issue(couponCommand :CouponCommand): IssueCouponResult {
         val coupon = couponRepository.findById(couponCommand.couponId);
-        coupon.decrease()
+        check(userCouponRepository.existsByUserIdAndCouponId(couponCommand.userId,couponCommand.couponId).not()){
+            "이미 발급된 쿠폰입니다."
+        }
+        val updatedCoupon = coupon.decrease()
         val issuedCoupon = UserCoupon.issue(couponCommand.userId,couponCommand.couponId)
-        val saveCoupon = couponRepository.save(coupon)
+        val saveCoupon = couponRepository.save(updatedCoupon)
+        val saveUserCoupon = userCouponRepository.save(issuedCoupon)
+        return IssueCouponResult.from(saveUserCoupon,saveCoupon)
+    }
+
+    @Transactional
+    fun issuePessimistic(couponCommand :CouponCommand): IssueCouponResult {
+        val coupon = couponRepository.findWithLockById(couponCommand.couponId);
+        check(userCouponRepository.existsByUserIdAndCouponId(couponCommand.userId,couponCommand.couponId).not()){
+            "이미 발급된 쿠폰입니다."
+        }
+        val updatedCoupon = coupon.decrease()
+        val issuedCoupon = UserCoupon.issue(couponCommand.userId,couponCommand.couponId)
+        val saveCoupon = couponRepository.save(updatedCoupon)
+        val saveUserCoupon = userCouponRepository.save(issuedCoupon)
+        return IssueCouponResult.from(saveUserCoupon,saveCoupon)
+    }
+
+
+    @Transactional
+    fun issueWithLock(couponCommand :CouponCommand): IssueCouponResult {
+        val lock = userCouponLock.computeIfAbsent(couponCommand.couponId) { ReentrantLock() }
+        lock.lock()
+        try {
+            val coupon = couponRepository.findById(couponCommand.couponId);
+            check(userCouponRepository.existsByUserIdAndCouponId(couponCommand.userId,couponCommand.couponId).not()){
+                "이미 발급된 쿠폰입니다."
+            }
+            val updatedCoupon = coupon.decrease()
+            val issuedCoupon = UserCoupon.issue(couponCommand.userId,couponCommand.couponId)
+            val saveCoupon = couponRepository.save(updatedCoupon)
+            val saveUserCoupon = userCouponRepository.save(issuedCoupon)
+            return IssueCouponResult.from(saveUserCoupon,saveCoupon)
+        }finally {
+            lock.unlock()
+        }
+    }
+
+    @Transactional(isolation = Isolation.SERIALIZABLE)
+    fun issueSerializable(couponCommand :CouponCommand): IssueCouponResult {
+        val coupon = couponRepository.findById(couponCommand.couponId);
+        check(userCouponRepository.existsByUserIdAndCouponId(couponCommand.userId,couponCommand.couponId).not()){
+            "이미 발급된 쿠폰입니다."
+        }
+        val updatedCoupon = coupon.decrease()
+        val issuedCoupon = UserCoupon.issue(couponCommand.userId,couponCommand.couponId)
+        val saveCoupon = couponRepository.save(updatedCoupon)
         val saveUserCoupon = userCouponRepository.save(issuedCoupon)
         return IssueCouponResult.from(saveUserCoupon,saveCoupon)
     }
