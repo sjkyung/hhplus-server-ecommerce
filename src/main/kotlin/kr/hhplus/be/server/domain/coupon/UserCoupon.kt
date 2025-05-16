@@ -36,12 +36,23 @@ data class UserCoupon(
             "쿠폰이 이미 사용되었거나 만료되었습니다."
         }
         return UserCoupon(
-            userCouponId = userCouponId,
-            userId = userId,
-            couponId = couponId,
+            userCouponId,
+            userId,
+            couponId,
             couponStatus = CouponStatus.USED,
             issuedAt,
             usedAt = LocalDateTime.now(),
+        )
+    }
+
+    fun expire() : UserCoupon{
+        return UserCoupon(
+            userCouponId,
+            userId,
+            couponId,
+            couponStatus = CouponStatus.EXPIRED,
+            issuedAt,
+            usedAt = null,
         )
     }
 }

@@ -12,6 +12,8 @@ import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.ArgumentMatchers.any
+import org.mockito.BDDMockito.given
+import org.mockito.BDDMockito.then
 import org.mockito.Mockito.doNothing
 import org.mockito.Mockito.doThrow
 import org.mockito.Mockito.mock
@@ -118,4 +120,48 @@ class CouponServiceTest {
         verify(couponRepository).save(coupon)
         verify(userCouponRepository).save(any(UserCoupon::class.java))
     }
+
+
+    @Test
+    fun `applyCoupon - 중복일 경우 예외 발생`() {
+        // given
+        given(couponRepository.checkDuplicate(1L)).willReturn(true)
+
+        // when & then
+        assertThatThrownBy { couponService.applyCoupon(1L, 100L) }
+            .isInstanceOf(IllegalStateException::class.java)
+            .hasMessageContaining("이미 발급된 쿠폰입니다.")
+
+        then(couponRepository).should().checkDuplicate(1L)
+    }
+
+    @Test
+    fun `applyCoupon - 재고 부족 시 예외 발생 - "쿠폰의 수량이 부족합니다"`() {
+        // given
+        given(couponRepository.checkDuplicate(1L)).willReturn(false)
+        given(couponRepository.decreaseStock(1L)).willReturn(false)
+
+        // when & then
+        assertThatThrownBy { couponService.applyCoupon(1L, 100L) }
+            .isInstanceOf(IllegalStateException::class.java)
+            .hasMessageContaining("쿠폰의 수량이 부족합니다")
+
+        then(couponRepository).should().checkDuplicate(1L)
+    }
+
+        @Test
+        fun `applyCoupon - 성공 시 true 반환하고 saveToPending 호출`() {
+            // given
+            given(couponRepository.checkDuplicate(1L)).willReturn(true)
+            given(couponRepository.decreaseStock(1L)).willReturn(true)
+
+            // when
+            val result = couponService.applyCoupon(1L, 100L)
+
+            // then
+            assertThat(result).isTrue()
+        }
+
+
+
 }

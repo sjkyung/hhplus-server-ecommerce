@@ -29,7 +29,6 @@ abstract class IntegrationTestBase {
 
     @Autowired
     lateinit var jdbcTemplate: JdbcTemplate
-    lateinit var redissonClient: RedissonClient
 
     @BeforeEach
     fun cleanDatabase() {
@@ -47,20 +46,7 @@ abstract class IntegrationTestBase {
 
         jdbcTemplate.execute("SET FOREIGN_KEY_CHECKS = 1")
 
-
-        val config = Config().apply {
-            useSingleServer()
-                .setAddress("redis://${redis.host}:${redis.getMappedPort(6379)}")
-        }
-
-        redissonClient = Redisson.create(config)
     }
-
-    @AfterEach
-    fun setDown(){
-        redissonClient.shutdown()
-    }
-
 
     companion object {
         @Container
