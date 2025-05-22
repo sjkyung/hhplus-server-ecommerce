@@ -1,5 +1,7 @@
 package kr.hhplus.be.server.application.payment
 
+import kr.hhplus.be.server.application.event.OrderDataPlatformSyncEvent
+import kr.hhplus.be.server.application.event.PaymentEventPublisher
 import kr.hhplus.be.server.application.lock.DistributedLock
 import kr.hhplus.be.server.application.lock.LockType
 import kr.hhplus.be.server.domain.coupon.CouponRepository
@@ -24,7 +26,8 @@ class PaymentService(
     private val orderRepository: OrderRepository,
     private val orderItemRepository: OrderItemRepository,
     private val paymentRepository: PaymentRepository,
-    private val applicationEventPublisher: ApplicationEventPublisher
+    private val applicationEventPublisher: ApplicationEventPublisher,
+    private val paymentEventPublisher: PaymentEventPublisher,
 ) {
 
     @Transactional
@@ -63,7 +66,13 @@ class PaymentService(
 
         val updatedOrder = order.complete()
         orderRepository.save(updatedOrder)
-        return paymentRepository.save(payment)
+        val savedPayment = paymentRepository.save(payment)
+
+        paymentEventPublisher.publishOrder(
+            OrderDataPlatformSyncEvent(order.id, order.userId, order.totalPrice)
+        )
+
+        return savedPayment
     }
 
     @DistributedLock(key = "'payment-lock-' + #paymentCommand.orderId", lockType = LockType.REDIS_SPIN)
