@@ -4,12 +4,14 @@ import kr.hhplus.be.server.application.lock.DistributedLock
 import kr.hhplus.be.server.application.lock.LockType
 import kr.hhplus.be.server.domain.coupon.CouponRepository
 import kr.hhplus.be.server.domain.coupon.UserCouponRepository
+import kr.hhplus.be.server.application.event.ProductSaleCompletedEvent
 import kr.hhplus.be.server.domain.order.OrderItemRepository
 import kr.hhplus.be.server.domain.order.OrderRepository
 import kr.hhplus.be.server.domain.payment.Payment
 import kr.hhplus.be.server.domain.payment.PaymentRepository
 import kr.hhplus.be.server.domain.point.UserPointRepository
 import kr.hhplus.be.server.domain.product.ProductRepository
+import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -21,7 +23,8 @@ class PaymentService(
     private val productRepository: ProductRepository,
     private val orderRepository: OrderRepository,
     private val orderItemRepository: OrderItemRepository,
-    private val paymentRepository: PaymentRepository
+    private val paymentRepository: PaymentRepository,
+    private val applicationEventPublisher: ApplicationEventPublisher
 ) {
 
     @Transactional
@@ -100,7 +103,15 @@ class PaymentService(
 
         val updatedOrder = order.complete()
         orderRepository.save(updatedOrder)
-        return paymentRepository.save(payment)
+        val savedPayment = paymentRepository.save(payment)
+
+        orderItems.forEach { item ->
+            applicationEventPublisher.publishEvent(
+                ProductSaleCompletedEvent(item.productId, item.quantity)
+            )
+        }
+
+        return savedPayment
     }
 
 
