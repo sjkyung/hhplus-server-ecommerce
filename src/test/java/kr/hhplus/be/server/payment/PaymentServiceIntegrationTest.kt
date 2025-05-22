@@ -1,5 +1,7 @@
 package kr.hhplus.be.server.payment
 
+import kr.hhplus.be.server.application.event.OrderDataPlatformSyncEvent
+import kr.hhplus.be.server.application.event.PaymentEventPublisher
 import kr.hhplus.be.server.application.payment.PaymentCommand
 import kr.hhplus.be.server.application.payment.PaymentService
 import kr.hhplus.be.server.domain.coupon.*
@@ -12,9 +14,14 @@ import kr.hhplus.be.server.support.IntegrationTestBase
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
+import org.mockito.Mockito.*
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean
+import org.springframework.test.context.event.ApplicationEvents
+import org.springframework.test.context.event.RecordApplicationEvents
 import java.time.LocalDateTime
 
+@RecordApplicationEvents
 class PaymentServiceIntegrationTest @Autowired constructor(
     private val paymentService: PaymentService,
     private val orderRepository: OrderRepository,
@@ -22,9 +29,11 @@ class PaymentServiceIntegrationTest @Autowired constructor(
     private val userPointRepository: UserPointRepository,
     private val productRepository: ProductRepository,
     private val userCouponRepository: UserCouponRepository,
-    private val couponRepository: CouponRepository
+    private val couponRepository: CouponRepository,
 ) : IntegrationTestBase() {
 
+    @MockitoSpyBean
+    lateinit var  paymentEventPublisher: PaymentEventPublisher
 
     @Test
     fun `존재하지 않는 주문 ID로 결제 시 예외가 발생한다`() {
@@ -345,7 +354,7 @@ class PaymentServiceIntegrationTest @Autowired constructor(
             )
         )
 
-        userPointRepository.save(UserPoint(id = 0, userId = 1L, point = 1000L))
+        userPointRepository.save(UserPoint(id = 0, userId = 1L, point = 1000L, version = 1))
 
         // when
         val command = PaymentCommand(orderId = order.id)
@@ -362,6 +371,82 @@ class PaymentServiceIntegrationTest @Autowired constructor(
         assertThat(updatedProduct.quantity).isEqualTo(9) // 1개 차감
         assertThat(updatedPoint.point).isEqualTo(0)      // 1000 포인트 사용
         assertThat(updatedCoupon.couponStatus).isEqualTo(CouponStatus.USED)
+    }
+
+
+    @Test
+    fun `존재하지 않는 주문 ID로 결제 시 예외가 발생하면 이벤트 발행되지 않는다`() {
+        // given
+        val command = PaymentCommand(orderId = 999L) // 존재하지 않음
+
+        // when&then
+        assertThatThrownBy {
+            paymentService.create(command)
+        }.isInstanceOf(NoSuchElementException::class.java)
+
+        val expectedEvent = OrderDataPlatformSyncEvent(orderId = 999L, userId = 10L, totalPrice = 2000L)
+        verify(paymentEventPublisher,times(0)).publishOrder(expectedEvent)
+    }
+
+
+    @Test
+    fun `정상적으로 결제가 완료되면 이벤트를 발행한다`(applicationEvents: ApplicationEvents) {
+        // given
+        val product = productRepository.save(
+            Product(id = 0, name = "상품", price = 2000L, quantity = 10)
+        )
+        val coupon = couponRepository.save(
+            Coupon(
+                couponId = 0,
+                "선착순 쿠폰",
+                1000,
+                100,
+                LocalDateTime.now().plusDays(1)
+            )
+        )
+
+        val userCoupon = userCouponRepository.save(
+            UserCoupon(
+                userCouponId = 0,
+                userId = 1L,
+                couponId = coupon.couponId,
+                couponStatus = CouponStatus.AVAILABLE,
+                issuedAt = LocalDateTime.now().minusDays(1),
+                usedAt = null
+            )
+        )
+
+        val order = orderRepository.save(
+            Order(
+                id = 0,
+                userId = 1L,
+                userCouponId = userCoupon.userCouponId,
+                status = OrderStatus.PENDING,
+                totalPrice = 2000L
+            )
+        )
+
+        orderItemRepository.saveAll(
+            listOf(
+                OrderItem(
+                    orderId = order.id!!,
+                    productId = product.id,
+                    price = 2000L,
+                    quantity = 1,
+                    createdAt = LocalDateTime.now()
+                )
+            )
+        )
+
+        userPointRepository.save(UserPoint(id = 0, userId = 1L, point = 1000L, version = 1))
+
+        // when
+        val command = PaymentCommand(orderId = order.id)
+        paymentService.create(command) // 성공
+
+        val expectedEvent = OrderDataPlatformSyncEvent(order.id, order.userId, order.totalPrice)
+        verify(paymentEventPublisher,times(1)).publishOrder(expectedEvent)
+        assertThat(applicationEvents.stream(OrderDataPlatformSyncEvent::class.java).count()).isEqualTo(1)// 이벤트 발행 확인
     }
 
 
