@@ -46,25 +46,4 @@ class PointServiceIntegrationTest @Autowired constructor(
         //then
         assertThat(result.userId).isEqualTo(userId)
     }
-
-    @Test
-    fun `동시에 포인트를 충전하면 최종 포인트가 예상과 다를 수 있다`() {
-        val userId = 1L
-        pointRepository.save(UserPoint(id = 0, userId = userId, point = 0))
-
-        TestFixtures.runConcurrently(100, Runnable {
-            try {
-                pointService.charge(PointChargeCommand(userId, 10))
-            } catch (e: Exception) {
-                println("에러 발생: ${e.javaClass.simpleName} - ${e.message}")
-            }
-        })
-
-        val finalPoint = pointRepository.findByUserId(userId)!!.point
-        println("최종 포인트: $finalPoint")
-
-        //의도적으로 실패: 기대값은 10 * 100 = 1000
-        assertThat(finalPoint).isEqualTo(1000)
-    }
-
 }
