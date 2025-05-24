@@ -1,5 +1,7 @@
 package kr.hhplus.be.server.payment
 
+import kr.hhplus.be.server.application.event.OrderDataPlatformSyncEvent
+import kr.hhplus.be.server.application.event.PaymentEventPublisher
 import kr.hhplus.be.server.application.payment.PaymentCommand
 import kr.hhplus.be.server.application.payment.PaymentService
 import kr.hhplus.be.server.domain.coupon.Coupon
@@ -24,6 +26,7 @@ import org.mockito.ArgumentMatchers.any
 import org.mockito.ArgumentMatchers.anyInt
 import org.mockito.ArgumentMatchers.anyLong
 import org.mockito.Mockito.*
+import org.springframework.context.ApplicationEventPublisher
 
 class PaymentServiceTest {
 
@@ -36,6 +39,8 @@ class PaymentServiceTest {
     private lateinit var paymentRepository: PaymentRepository
 
     private lateinit var paymentService: PaymentService
+    private lateinit var eventPublisher: ApplicationEventPublisher
+    private lateinit var paymentEvent: PaymentEventPublisher
 
     @BeforeEach
     fun init() {
@@ -46,6 +51,9 @@ class PaymentServiceTest {
         orderRepository = mock(OrderRepository::class.java)
         orderItemRepository = mock(OrderItemRepository::class.java)
         paymentRepository = mock(PaymentRepository::class.java)
+        eventPublisher = mock(ApplicationEventPublisher::class.java)
+        paymentEvent = mock(PaymentEventPublisher::class.java)
+
 
         paymentService = PaymentService(
             userCouponRepository,
@@ -54,7 +62,9 @@ class PaymentServiceTest {
             productRepository,
             orderRepository,
             orderItemRepository,
-            paymentRepository
+            paymentRepository,
+            eventPublisher,
+            paymentEvent
         )
     }
 
@@ -239,4 +249,49 @@ class PaymentServiceTest {
 
         verify(couponRepository).findById(200L)
     }
+
+
+    @Test
+    fun `주문 결제 시 성공하면 이벤트를 발행한다`(){
+        //given
+        val paymentCommand = PaymentCommand(orderId = 123L)
+
+        val order = Order.create(userId = 10L, totalPrice = 5000L, userCouponId = 200L)
+        val savedOrder = order.copy(id = 123L)
+        `when`(orderRepository.findById(anyLong())).thenReturn(savedOrder)
+        val orderItem = mock(OrderItem::class.java)
+        `when`(orderItemRepository.findByOrderId(anyLong())).thenReturn(listOf(orderItem))
+        val product = mock(Product::class.java)
+        `when`(productRepository.findById(anyLong())).thenReturn(product)
+        val userCoupon = mock(UserCoupon::class.java)
+        `when`(userCouponRepository.findById(anyLong())).thenReturn(userCoupon)
+        val coupon = mock(Coupon::class.java)
+        `when`(couponRepository.findById(anyLong())).thenReturn(coupon)
+        val userPoint = mock(UserPoint::class.java)
+        `when`(pointRepository.findByUserId(anyLong())).thenReturn(userPoint)
+
+
+        paymentService.create(paymentCommand)
+
+        val expectedEvent = OrderDataPlatformSyncEvent(orderId = 123L, userId = 10L, totalPrice = 5000L)
+        verify(paymentEvent, times(1)).publishOrder(expectedEvent)
+    }
+
+
+    @Test
+    fun `주문 결제 시 실패하면 이벤트를 발행하지 않는다`(){
+        //given
+        val paymentCommand = PaymentCommand(orderId = 123L)
+        `when`(orderRepository.findById(123L)).thenThrow(NoSuchElementException::class.java)
+
+        // when
+        assertThatThrownBy {
+            paymentService.create(paymentCommand)
+        }.isInstanceOf(NoSuchElementException::class.java)
+
+        val expectedEvent = OrderDataPlatformSyncEvent(orderId = 123L, userId = 10L, totalPrice = 5000L)
+        verify(paymentEvent, times(0)).publishOrder(expectedEvent)
+    }
+
+
 }
