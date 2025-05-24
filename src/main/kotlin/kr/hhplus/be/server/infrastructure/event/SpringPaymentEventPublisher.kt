@@ -1,4 +1,4 @@
-package kr.hhplus.be.server.interfaces.event
+package kr.hhplus.be.server.infrastructure.event
 
 
 import kr.hhplus.be.server.application.event.OrderDataPlatformSyncEvent
