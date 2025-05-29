@@ -1,30 +1,22 @@
 package kr.hhplus.be.server.application.event
 
 
-import kr.hhplus.be.server.application.dataPlatform.DataPlatformCommand
-import kr.hhplus.be.server.application.dataPlatform.DataPlatformService
+import org.springframework.kafka.core.KafkaTemplate
 import org.springframework.scheduling.annotation.Async
 import org.springframework.stereotype.Component
 import org.springframework.transaction.event.TransactionPhase
 import org.springframework.transaction.event.TransactionalEventListener
-import java.time.LocalDateTime
+
 
 @Component
 class DataPlatformSyncListener(
-    private val dataPlatformService: DataPlatformService
+    private val kafkaTemplate: KafkaTemplate<String, OrderDataPlatformSyncEvent>
 ) {
 
     @Async
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     fun handleOrderDataPlatformSyncEvent(event: OrderDataPlatformSyncEvent) {
-        //데이터 플랫폼 전송
-        val dataPlatformCommand= DataPlatformCommand(
-            orderId = event.orderId,
-            userId = event.userId,
-            totalPrice = event.totalPrice,
-            sendTime = LocalDateTime.now()
-        )
-        dataPlatformService.send(dataPlatformCommand);
+        kafkaTemplate.send("order-topic", OrderDataPlatformSyncEvent(event.orderId, event.userId, event.totalPrice))
     }
 
 }

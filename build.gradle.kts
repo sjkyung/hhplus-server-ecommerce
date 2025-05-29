@@ -50,13 +50,14 @@ dependencies {
 	implementation("org.springframework.boot:spring-boot-starter-web")
 	implementation("org.springframework.boot:spring-boot-starter-data-redis")
 	implementation("org.redisson:redisson-spring-boot-starter:3.37.0") //redisson
+	implementation("org.springframework.kafka:spring-kafka")//kafka
 
 	//swagger
 	implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.6")
 
 	implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.17.0")
 
-    // DB
+	// DB
 	runtimeOnly("com.mysql:mysql-connector-j")
 
     // Test
@@ -64,6 +65,8 @@ dependencies {
 	testImplementation("org.springframework.boot:spring-boot-testcontainers")
 	testImplementation("org.testcontainers:junit-jupiter")
 	testImplementation("org.testcontainers:mysql")
+	testImplementation("org.springframework.kafka:spring-kafka-test")
+	testImplementation("org.testcontainers:kafka")
 	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
