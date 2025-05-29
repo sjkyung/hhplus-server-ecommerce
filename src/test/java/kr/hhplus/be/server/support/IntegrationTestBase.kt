@@ -17,6 +17,7 @@ import org.testcontainers.containers.GenericContainer
 import org.testcontainers.containers.MySQLContainer
 import org.testcontainers.junit.jupiter.Container
 import org.testcontainers.junit.jupiter.Testcontainers
+import org.testcontainers.kafka.KafkaContainer
 import org.testcontainers.utility.DockerImageName
 
 
@@ -61,6 +62,9 @@ abstract class IntegrationTestBase {
             withExposedPorts(6379)
         }
 
+        @Container
+        val kafka = KafkaContainer(DockerImageName.parse("apache/kafka:3.7.0"))
+
         @JvmStatic
         @DynamicPropertySource
         fun overrideProperties(registry: DynamicPropertyRegistry) {
@@ -70,6 +74,10 @@ abstract class IntegrationTestBase {
 
             registry.add("spring.redis.host") {redis.host}
             registry.add("spring.redis.port") {redis.getMappedPort(6379).toString()}
+
+            registry.add("spring.kafka.bootstrap-servers") {
+                kafka.bootstrapServers
+            }
         }
     }
 }
