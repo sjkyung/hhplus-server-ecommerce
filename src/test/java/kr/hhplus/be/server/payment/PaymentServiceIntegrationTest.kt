@@ -1,5 +1,6 @@
 package kr.hhplus.be.server.payment
 
+import kr.hhplus.be.server.interfaces.order.event.OrderEventListener
 import kr.hhplus.be.server.application.event.OrderDataPlatformSyncEvent
 import kr.hhplus.be.server.application.event.PaymentEventPublisher
 import kr.hhplus.be.server.application.payment.PaymentCommand
@@ -13,6 +14,7 @@ import kr.hhplus.be.server.domain.product.ProductRepository
 import kr.hhplus.be.server.support.IntegrationTestBase
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
+import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito.*
 import org.springframework.beans.factory.annotation.Autowired
@@ -20,6 +22,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoSpyBean
 import org.springframework.test.context.event.ApplicationEvents
 import org.springframework.test.context.event.RecordApplicationEvents
 import java.time.LocalDateTime
+
 
 @RecordApplicationEvents
 class PaymentServiceIntegrationTest @Autowired constructor(
@@ -34,6 +37,9 @@ class PaymentServiceIntegrationTest @Autowired constructor(
 
     @MockitoSpyBean
     lateinit var  paymentEventPublisher: PaymentEventPublisher
+
+    @MockitoSpyBean
+    lateinit var  orderEventListener: OrderEventListener
 
     @Test
     fun `존재하지 않는 주문 ID로 결제 시 예외가 발생한다`() {
@@ -447,6 +453,70 @@ class PaymentServiceIntegrationTest @Autowired constructor(
         val expectedEvent = OrderDataPlatformSyncEvent(order.id, order.userId, order.totalPrice)
         verify(paymentEventPublisher,times(1)).publishOrder(expectedEvent)
         assertThat(applicationEvents.stream(OrderDataPlatformSyncEvent::class.java).count()).isEqualTo(1)// 이벤트 발행 확인
+    }
+
+
+    @Test
+    @DisplayName("결제 완료 시 kafka 메시지가 전송된다.")
+    fun sendPaymentSuccessMessage(){
+        // given
+        val product = productRepository.save(
+            Product(id = 0, name = "상품", price = 2000L, quantity = 10)
+        )
+        val coupon = couponRepository.save(
+            Coupon(
+                couponId = 0,
+                "선착순 쿠폰",
+                1000,
+                100,
+                LocalDateTime.now().plusDays(1)
+            )
+        )
+
+        val userCoupon = userCouponRepository.save(
+            UserCoupon(
+                userCouponId = 0,
+                userId = 1L,
+                couponId = coupon.couponId,
+                couponStatus = CouponStatus.AVAILABLE,
+                issuedAt = LocalDateTime.now().minusDays(1),
+                usedAt = null
+            )
+        )
+
+        val order = orderRepository.save(
+            Order(
+                id = 0,
+                userId = 1L,
+                userCouponId = userCoupon.userCouponId,
+                status = OrderStatus.PENDING,
+                totalPrice = 2000L
+            )
+        )
+
+        orderItemRepository.saveAll(
+            listOf(
+                OrderItem(
+                    orderId = order.id!!,
+                    productId = product.id,
+                    price = 2000L,
+                    quantity = 1,
+                    createdAt = LocalDateTime.now()
+                )
+            )
+        )
+
+        userPointRepository.save(UserPoint(id = 0, userId = 1L, point = 1000L, version = 1))
+
+        // when
+        val command = PaymentCommand(orderId = order.id)
+        paymentService.create(command) // 성공
+
+
+        // then
+        val expectedEvent = OrderDataPlatformSyncEvent(order.id, order.userId, order.totalPrice)
+        verify(orderEventListener, timeout(3000).times(1))
+            .consumeOrder(expectedEvent)
     }
 
 
